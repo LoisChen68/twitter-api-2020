@@ -216,6 +216,7 @@ const userController = {
       .catch(err => next(err))
   },
   getUserLikes: (req, res, next) => {
+    const currentUser = helpers.getUser(req)?.id
     const UserId = req.params.id
 
     Like.findAll({
@@ -230,18 +231,23 @@ const userController = {
         attributes: {
           include: [[
             sequelize.literal(
-              '(SELECT COUNT(*) FROM Replies AS ReplyUsers WHERE tweet_id = Tweet.id )'), 'replyCount'
+              '(SELECT COUNT(*) FROM Replies AS ReplyUsers WHERE Tweet_id = Tweet.id )'), 'replyCount'
           ],
           [
             sequelize.literal(
-              '(SELECT COUNT(*) FROM likes AS LikeUsers WHERE tweet_id = Tweet.id )'), 'likeCount'
+              '(SELECT COUNT(*) FROM likes AS LikeUsers WHERE Tweet_id = Tweet.id )'), 'likeCount'
           ]]
         }
       }],
       order: [['createdAt', 'Desc']]
     })
       .then(likes => {
-        res.json(likes)
+        const result = likes
+          .map(likes => ({
+            ...likes.toJSON(),
+            isLike: likes.UserId === currentUser
+          }))
+        res.json(result)
       })
       .catch(err => next(err))
   },
